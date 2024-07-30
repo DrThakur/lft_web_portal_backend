@@ -229,7 +229,11 @@ const findOrCreateUser = async (name) => {
 
 const getAllProjects = asyncErrorHandler(async (req, res, next) => {
   try {
-    const projects = await Project.find({});
+    const projects = await Project.find({}).populate({
+        path: 'projectManager',
+        model: 'user',
+        select: 'fullName designation employeeId profileImageURL'
+      });
     res.status(200).json({
       status: "Success",
       total: projects.length,

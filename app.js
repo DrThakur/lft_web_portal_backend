@@ -23,7 +23,7 @@ app.get("/", (req, res) => {
 
 app.use("/api/v1/auth", authRouter);
 app.use("/users", userRouter);
-app.use("/project", projectRouter);
+app.use("/projects", projectRouter);
 
 
 app.all("*", (req, res, next) => {
