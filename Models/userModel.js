@@ -67,11 +67,11 @@ const userSchema = new mongoose.Schema(
     },
     dateOfJoining: {
       type: Date,
-      required: true,
+      
     },
     dateOfBirth: {
       type: Date,
-      required: true,
+     
     },
     gender: {
       type: String,
