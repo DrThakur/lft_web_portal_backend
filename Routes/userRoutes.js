@@ -5,6 +5,7 @@ const User = require("../Models/userModel");
 
 
 const {
+  getUsers,
   getAllUsers,
   createNewUser,
   createNewUsersFromCSV,
@@ -35,8 +36,10 @@ const {
 // router.delete("/deleteAll", deleteAll);
 
 // Define routes with explicit HTTP methods for clarity
-router.get("/", getAllUsers);
+router.get("/", getUsers)
+router.get("/all", getAllUsers);
 router.post("/", createNewUser);
+
 
 router.get("/:id", getUserById);
 router.patch("/:id", updateUserById);

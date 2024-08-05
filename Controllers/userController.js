@@ -94,6 +94,26 @@ const getAllUsers = asyncErrorHandler(async (req, res, next) => {
   }
 });
 
+// Get users with pagination
+const getUsers = asyncErrorHandler(async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+
+  const skip = (page - 1) * limit;
+
+  const totalUsers = await User.countDocuments();
+  const users = await User.find().skip(skip).limit(limit);
+
+  res.status(200).json({
+      success: true,
+      page,
+      totalUsers,
+      totalPages: Math.ceil(totalUsers / limit),
+      users,
+  });
+});
+
+
 const getUserById = asyncErrorHandler(async (req, res, next) => {
   try {
     const user = await User.findById(req.params.id);
@@ -186,6 +206,7 @@ const deleteAll = asyncErrorHandler(async (req, res, next) => {
 });
 
 module.exports = {
+  getUsers,
   getAllUsers,
   createNewUser,
   createNewUsersFromCSV,
