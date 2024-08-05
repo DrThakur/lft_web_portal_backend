@@ -346,10 +346,102 @@ const createProjectFromCSV = asyncErrorHandler(async (req, res, next) => {
   }
 });
 
+
+const updateProjectById = asyncErrorHandler(async (req, res, next) => {
+  const { projectId } = req.params;
+  const { teams, milestones, ...projectData } = req.body;
+
+  try {
+    // Find the project by ID
+    const project = await Project.findById(projectId);
+    if (!project) {
+      return res.status(404).json({ message: "Project not found" });
+    }
+
+    // Update project fields
+    Object.assign(project, projectData);
+
+    // Update teams if provided
+    if (teams) {
+      const updatedTeams = [];
+      for (const team of teams) {
+        const teamMembers = [];
+        for (const member of team.members) {
+          const newMember = {
+            user: member.user,
+            role: member.role,
+          };
+          teamMembers.push(newMember);
+        }
+
+        const existingTeam = await Team.findById(team._id);
+        if (existingTeam) {
+          existingTeam.name = team.teamName;
+          existingTeam.members = teamMembers;
+          const savedTeam = await existingTeam.save();
+          updatedTeams.push(savedTeam);
+        } else {
+          const newTeam = new Team({
+            name: team.teamName,
+            members: teamMembers,
+          });
+          const savedTeam = await newTeam.save();
+          updatedTeams.push(savedTeam);
+        }
+      }
+      project.teams = updatedTeams.map((team) => team._id);
+    }
+
+    // Update milestones if provided
+    if (milestones) {
+      const updatedMilestones = [];
+      for (const milestone of milestones) {
+        const existingMilestone = await Milestone.findById(milestone._id);
+        if (existingMilestone) {
+          existingMilestone.milestoneName = milestone.milestoneName;
+          existingMilestone.plannedStartDate = milestone.plannedStartDate;
+          existingMilestone.plannedEndDate = milestone.plannedEndDate;
+          existingMilestone.actualStartDate = milestone.actualStartDate;
+          existingMilestone.actualEndDate = milestone.actualEndDate;
+          existingMilestone.invoiceValue = milestone.invoiceValue;
+          existingMilestone.description = milestone.description;
+          existingMilestone.status = milestone.status;
+          existingMilestone.health = milestone.health;
+          const savedMilestone = await existingMilestone.save();
+          updatedMilestones.push(savedMilestone);
+        } else {
+          const newMilestone = new Milestone({
+            milestoneName: milestone.milestoneName,
+            plannedStartDate: milestone.plannedStartDate,
+            plannedEndDate: milestone.plannedEndDate,
+            actualStartDate: milestone.actualStartDate,
+            actualEndDate: milestone.actualEndDate,
+            invoiceValue: milestone.invoiceValue,
+            description: milestone.description,
+            status: milestone.status,
+            health: milestone.health,
+          });
+          const savedMilestone = await newMilestone.save();
+          updatedMilestones.push(savedMilestone);
+        }
+      }
+      project.milestones = updatedMilestones.map((milestone) => milestone._id);
+    }
+
+    // Save the updated project
+    await project.save();
+    res.status(200).json(project);
+  } catch (error) {
+    console.error(error);
+    next(error);
+  }
+});
+
 module.exports = {
   createNewProject,
   importProjects,
   getAllProjects,
   deleteAll,
   createProjectFromCSV,
+  updateProjectById
 };
