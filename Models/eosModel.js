@@ -6,14 +6,14 @@ employee: {
     ref: 'User'
   },
   Projects: [{
-    ProjectName: {
-      type: String,
-      required: true
-    },
-    ProjectManager: {
-      type: String,
-      required: true
-    },
+    // ProjectName: {
+    //   type: String,
+    //   required: true
+    // },
+    // ProjectManager: {
+    //   type: String,
+    //   required: true
+    // },
     Contribution: {  
       type: Number,
       required: true,

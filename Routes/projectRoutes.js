@@ -8,11 +8,13 @@ const {
   getAllProjects,
   deleteAll,
   createProjectFromCSV,
-  updateProjectById
+  updateProjectById,
+  getProjectById
 } = require("../Controllers/projectController");
 
 router.post("/", createNewProject);
 router.get("/", getAllProjects);
+router.get("/:projectId", getProjectById);
 router.patch("/:projectId", updateProjectById);
 router.delete("/", deleteAll);
 router.post("/import-projects", upload, createProjectFromCSV);

@@ -437,11 +437,42 @@ const updateProjectById = asyncErrorHandler(async (req, res, next) => {
   }
 });
 
+const getProjectById = asyncErrorHandler(async (req, res, next) => {
+  const { projectId } = req.params;
+
+  try {
+    const project = await Project.findById(projectId).populate({
+      path: 'projectManager',
+      model: 'user',
+      select: 'fullName designation employeeId profileImageURL'
+    }).populate({
+      path: 'smLeadId',
+      model: 'user',
+      select: 'fullName designation employeeId profileImageURL'
+    });
+    
+     
+    if (!project) {
+      return res.status(404).json({ message: "Project not found" });
+    }
+
+    res.status(200).json({
+      status: "Success",
+      project,
+    });
+  } catch (error) {
+    console.error(error);
+    next(error);
+  }
+});
+
+
 module.exports = {
   createNewProject,
   importProjects,
   getAllProjects,
   deleteAll,
   createProjectFromCSV,
-  updateProjectById
+  updateProjectById,
+  getProjectById
 };
