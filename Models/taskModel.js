@@ -16,6 +16,7 @@ const taskSchema = new mongoose.Schema({
     default: "On Track",
   },
   owner: { type: Schema.Types.ObjectId, ref: "User", required: true },
+  team:{type: Schema.Types.ObjectId, ref: "Team", required: true},
   performance: { type: String, required: true },
   effort: { type: Number, required: true }, // Effort in days
   dependency: { type: Schema.Types.ObjectId, ref: "Task" }, // Self-referencing for task dependency

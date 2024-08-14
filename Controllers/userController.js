@@ -1,9 +1,10 @@
 const User = require("../Models/userModel");
 const csvParser = require("csv-parser");
 const fs = require("fs");
-const {saveUserDataToDatabase} = require("../Utils/importFile");
+const { saveUserDataToDatabase } = require("../Utils/importFile");
 const setRequiredFields = require("../Utils/requiredFields");
 const asyncErrorHandler = require("../Utils/asyncErrorHandler");
+const Project = require("../Models/projectModel");
 
 // Create Users
 
@@ -83,7 +84,14 @@ const createNewUsersFromCSV = asyncErrorHandler(async (req, res, next) => {
 
 const getAllUsers = asyncErrorHandler(async (req, res, next) => {
   try {
-    const users = await User.find({});
+    const users = await User.find({})
+      .populate({
+        path: "projects.project", // Populate the project field in the projects array
+        model: "project", // Reference the Project model
+        select: "-__v", // Select fields to include/exclude (optional, e.g., exclude the __v field)
+      })
+      .exec();
+
     res.status(200).json({
       status: "Success",
       total: users.length,
@@ -105,18 +113,28 @@ const getUsers = asyncErrorHandler(async (req, res) => {
   const users = await User.find().skip(skip).limit(limit);
 
   res.status(200).json({
-      success: true,
-      page,
-      totalUsers,
-      totalPages: Math.ceil(totalUsers / limit),
-      users,
+    success: true,
+    page,
+    totalUsers,
+    totalPages: Math.ceil(totalUsers / limit),
+    users,
   });
 });
 
-
 const getUserById = asyncErrorHandler(async (req, res, next) => {
   try {
-    const user = await User.findById(req.params.id);
+    const user = await User.findById(req.params.id)
+      .populate({
+        path: "projects.project", // Populate the project field in the projects array
+        model: "project", // Reference the Project model
+        select: "-__v", // Select fields to include/exclude (optional, e.g., exclude the __v field)
+        populate: {
+          path: "projectManager", // Populate the projectManager field in the project
+          model: "user", // Reference the User model for projectManager
+          select: "-password -__v", // Select fields to include/exclude (optional)
+        },
+      })
+      .exec();
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }

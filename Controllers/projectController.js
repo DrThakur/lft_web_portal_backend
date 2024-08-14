@@ -87,13 +87,59 @@ const upload = multer({ storage: storage }).single("file");
 
 const createNewProject = async (req, res) => {
   try {
-    console.log("Request body for project", req.body);
-    const { projectName, projectId, teams, milestones, ...otherProjectData } =
+    // console.log("Request body for project", req.body);
+    const { smLeadId: employeeId,projectName, projectId, teams, milestones, ...otherProjectData } =
       req.body;
+    // console.log("my projectName", projectName);
+    // console.log("my projectId", projectId);
+    // console.log("my other project data", otherProjectData);
+    // console.log("Teams for project", teams);
+    // console.log("Milestones", milestones);
 
-    console.log("Teams for project", teams);
-    console.log("Milestones", milestones);
+  // Check for existing project by projectId or projectName
+  const existingProject = await Project.findOne({
+    $or: [{ projectId }, { projectName }]
+  });
 
+  if (existingProject) {
+    return res.status(400).json({ message: "A project with the same ID or name already exists." });
+  }
+
+    
+    const employee = await User.findOne({ employeeId });
+    if (!employee) {
+      return res.status(404).json({ message: "Employee not found." });
+    }
+
+    
+    // Step 1: Create the project without teams and milestones
+    const newProject = new Project({
+      projectId,
+      projectName,
+      teams: [], // Empty array for teams
+      milestones: [], // Empty array for milestones
+      keywords: otherProjectData.keywords,
+      smLeadId: employee._id,
+      loaction: otherProjectData.loaction,
+      projectDescription: otherProjectData.description,
+      clientName: otherProjectData.clientName,
+      clientAddress: otherProjectData.clientAddress,
+      pointOfContact: otherProjectData.pointOfContact,
+      conatctPersonPhone: otherProjectData.contactDetails,
+      startDate: otherProjectData.startDate,
+      endDate: otherProjectData.endDate,
+      duration: otherProjectData.duration,
+      softwareBQ: otherProjectData.softwareBQ,
+      hardwareBQ: otherProjectData.hardwareBQ,
+      fpgaBQ: otherProjectData.fpgaBQ,
+      qaBQ: otherProjectData.qaBQ,
+      totalBQ: otherProjectData.totalBQ,
+      projectManager: otherProjectData.projectManager.data._id,
+    });
+
+    const savedProject = await newProject.save();
+
+    console.log("New project created:", savedProject);
     // Create and save team members directly within teams
     const savedTeams = [];
     for (const team of teams) {
@@ -102,7 +148,7 @@ const createNewProject = async (req, res) => {
       for (const member of team.members) {
         console.log("Members", member);
         const newMember = {
-          user: member.user,
+          user: member.data._id,
           role: member.role,
         };
         teamMembers.push(newMember);
@@ -112,6 +158,7 @@ const createNewProject = async (req, res) => {
       console.log("team name", team.teamName);
 
       const newTeam = new Team({
+        projectId: savedProject._id,
         name: team.teamName,
         members: teamMembers,
       });
@@ -125,6 +172,7 @@ const createNewProject = async (req, res) => {
     const savedMilestones = [];
     for (const milestone of milestones) {
       const newMilestone = new Milestone({
+        projectId: savedProject._id,
         milestoneName: milestone.milestoneName,
         plannedStartDate: milestone.plannedStartDate,
         plannedEndDate: milestone.plannedEndDate,
@@ -148,19 +196,25 @@ const createNewProject = async (req, res) => {
     console.log("saved Teams 1", savedTeams[1]);
 
     // Create and save project
-    const newProject = new Project({
-      projectName,
-      projectId,
-      teams: savedTeams.map((team) => team._id),
-      milestones: savedMilestones.map((milestone) => milestone._id),
-      ...otherProjectData,
-    });
+    // const newProject = new Project({
+    //   projectName,
+    //   projectId,
+    //   teams: savedTeams.map((team) => team._id),
+    //   milestones: savedMilestones.map((milestone) => milestone._id),
+    //   ...otherProjectData,
+    // });
+
+    // Step 4: Update the project with the saved teams and milestones
+    savedProject.teams = savedTeams.map((team) => team._id);
+    savedProject.milestones = savedMilestones.map((milestone) => milestone._id);
+
+    await savedProject.save();
 
     console.log("my new project...", newProject);
 
-    await newProject.save();
+    // await newProject.save();
     console.log("New project created", newProject);
-    res.status(201).json(newProject);
+    res.status(201).json(savedProject);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server Error" });
@@ -230,10 +284,14 @@ const findOrCreateUser = async (name) => {
 const getAllProjects = asyncErrorHandler(async (req, res, next) => {
   try {
     const projects = await Project.find({}).populate({
-        path: 'projectManager',
-        model: 'user',
-        select: 'fullName designation employeeId profileImageURL'
-      });
+      path: "projectManager",
+      model: "user",
+      select: "fullName designation employeeId profileImageURL",
+    }).populate({
+      path: "teams",
+      model: "team",
+      select: "name",
+    })
     res.status(200).json({
       status: "Success",
       total: projects.length,
@@ -296,7 +354,7 @@ const createProjectFromCSV = asyncErrorHandler(async (req, res, next) => {
             // console.log("Processed Row:", processedRow);
             // await saveUserDataToDatabase(processedRow);
             // Find the project manager's ObjectId
-            console.log("my project mnager name", entry.projectManager)
+            console.log("my project mnager name", entry.projectManager);
             const projectManagerName = entry.projectManager;
             const projectManager = await User.findOne({
               fullName: projectManagerName,
@@ -318,10 +376,11 @@ const createProjectFromCSV = asyncErrorHandler(async (req, res, next) => {
             if (smLead) {
               entry.smLeadId = smLead._id;
             } else {
-              console.log(`Sales Manager ${smLeadName} not found in the User database.`);
+              console.log(
+                `Sales Manager ${smLeadName} not found in the User database.`
+              );
               entry.smLeadId = null; // or handle this case as needed
             }
-
 
             await saveProjectDataToDatabase(entry);
           }
@@ -345,7 +404,6 @@ const createProjectFromCSV = asyncErrorHandler(async (req, res, next) => {
     next(error);
   }
 });
-
 
 const updateProjectById = asyncErrorHandler(async (req, res, next) => {
   const { projectId } = req.params;
@@ -441,17 +499,18 @@ const getProjectById = asyncErrorHandler(async (req, res, next) => {
   const { projectId } = req.params;
 
   try {
-    const project = await Project.findById(projectId).populate({
-      path: 'projectManager',
-      model: 'user',
-      select: 'fullName designation employeeId profileImageURL'
-    }).populate({
-      path: 'smLeadId',
-      model: 'user',
-      select: 'fullName designation employeeId profileImageURL'
-    });
-    
-     
+    const project = await Project.findById(projectId)
+      .populate({
+        path: "projectManager",
+        model: "user",
+        select: "fullName designation employeeId profileImageURL",
+      })
+      .populate({
+        path: "smLeadId",
+        model: "user",
+        select: "fullName designation employeeId profileImageURL",
+      });
+
     if (!project) {
       return res.status(404).json({ message: "Project not found" });
     }
@@ -466,7 +525,6 @@ const getProjectById = asyncErrorHandler(async (req, res, next) => {
   }
 });
 
-
 module.exports = {
   createNewProject,
   importProjects,
@@ -474,5 +532,5 @@ module.exports = {
   deleteAll,
   createProjectFromCSV,
   updateProjectById,
-  getProjectById
+  getProjectById,
 };

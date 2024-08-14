@@ -108,6 +108,26 @@ const userSchema = new mongoose.Schema(
     passwordChangedAt: Date,
     passwordResetToken: { type: String },
     passwordResetTokenExpires: { type: Date },
+    projects: [{
+    project: { type: mongoose.Schema.Types.ObjectId, ref: 'Project' },
+    role: {type:String},
+    occupancy: {type:Number},
+  }],
+  activities: [{
+    activity: { type: mongoose.Schema.Types.ObjectId, ref: 'Activity' },
+    role: {type:String},  // Role or involvement in the activity
+    occupancy: {type:Number},  // Hours or percentage involved in the activity
+  }],
+  performance: {
+    overallRating: Number,
+    projectRatings: [{ project: mongoose.Schema.Types.ObjectId, rating: Number }],
+    activityRatings: [{ activity: mongoose.Schema.Types.ObjectId, rating: Number }],
+  },
+  remarks: [{
+    remark: String,
+    givenBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },  // Manager/HR who gave the remark
+    date: { type: Date, default: Date.now }
+  }],
   },
 
   { timestamps: true }

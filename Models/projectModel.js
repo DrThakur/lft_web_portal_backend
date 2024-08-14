@@ -52,7 +52,12 @@ const projectSchema = new mongoose.Schema({
     type: Date,
   },
   duration: {
-    type: Number,
+    type: {
+      years: Number,
+      months: Number,
+      days: Number,
+    },
+    default: { years: 0, months: 0, days: 0 }
   },
   softwareBQ: {
     type: Number,

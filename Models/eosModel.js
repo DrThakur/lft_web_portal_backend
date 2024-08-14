@@ -1,33 +1,37 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
+const { Schema } = mongoose;
+
 
 const eosSchema = new mongoose.Schema({
-employee: {
+  employee: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
+    ref: "User",
   },
-  Projects: [{
-    // ProjectName: {
-    //   type: String,
-    //   required: true
-    // },
-    // ProjectManager: {
-    //   type: String,
-    //   required: true
-    // },
-    Contribution: {  
-      type: Number,
-      required: true,
-      default: 0
+  month: { type: String }, // Format: YYYY-MM
+  year: { type: Number },
+  projects: [
+    {
+      project: {
+        type: Schema.Types.ObjectId, // Change from String to ObjectId
+        ref: "Project", // Ensure this is correct
+        required: true,
+      },
+
+      occupancy: {
+        type: Number,
+        required: true,
+        default: 0,
+      },
     },
-    projectRole:{
-        type:String,
+  ],
+  activities: [
+    {
+      activity: { type: Schema.Types.ObjectId, ref: "Activity" },
+      occupancy: Number, // Hours or percentage involved in the activity
     },
-    projectDuration:{
-        type:Number
-    }
-  }]
+  ],
 });
 
-const EOS = mongoose.model('EOS', eosSchema);
+const EOS = mongoose.model("EOS", eosSchema);
 
 module.exports = EOS;

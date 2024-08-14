@@ -4,6 +4,11 @@ const cors = require("cors");
 const userRouter = require("./Routes/userRoutes");
 const authRouter = require("./Routes/authRoutes");
 const projectRouter = require("./Routes/projectRoutes");
+const activityRouter = require("./Routes/activityRoutes");
+const eosRouter=require("./Routes/eosRoutes");
+const milestoneRouter = require("./Routes/milestoneRoutes");
+const teamRouter = require("./Routes/teamRoutes");
+const taskRouter = require("./Routes/taskRoutes");
 const CustomError = require("./Utils/CustomError");
 const globalErrorHandler = require("./Controllers/errorController");
 
@@ -24,6 +29,11 @@ app.get("/", (req, res) => {
 app.use("/api/v1/auth", authRouter);
 app.use("/users", userRouter);
 app.use("/projects", projectRouter);
+app.use("/activities", activityRouter);
+app.use("/eos", eosRouter);
+app.use("/milestones", milestoneRouter);
+app.use("/teams", teamRouter);
+app.use("/tasks", taskRouter);
 
 
 app.all("*", (req, res, next) => {
