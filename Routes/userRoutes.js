@@ -13,6 +13,8 @@ const {
   getUserFromDesignation,
   getUserFromRole,
   updateUserById,
+  updatePerformanceFromCSV,
+  importTechSkillsFromCSV,
   deleteMultipleUsersByIds,
   deleteUserById,
   deleteAll,
@@ -50,6 +52,8 @@ router.delete("/delete-multiple", deleteMultipleUsersByIds);
 router.delete("/:id", deleteUserById);
 
 router.post("/importFile", upload, createNewUsersFromCSV);
+router.post("/peformanceUpdate", upload, updatePerformanceFromCSV);
+router.post("/techSkillsUpdate", upload, importTechSkillsFromCSV);
 
 // Ensure the deleteAll route is defined after other specific routes
 

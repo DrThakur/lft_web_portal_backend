@@ -48,7 +48,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "N/A",
     },
-    
+
     profileImageURL: {
       type: String,
       default: "/images/profile_image.jpg",
@@ -67,11 +67,9 @@ const userSchema = new mongoose.Schema(
     },
     dateOfJoining: {
       type: Date,
-      
     },
     dateOfBirth: {
       type: Date,
-     
     },
     gender: {
       type: String,
@@ -108,26 +106,33 @@ const userSchema = new mongoose.Schema(
     passwordChangedAt: Date,
     passwordResetToken: { type: String },
     passwordResetTokenExpires: { type: Date },
-    projects: [{
-    project: { type: mongoose.Schema.Types.ObjectId, ref: 'Project' },
-    role: {type:String},
-    occupancy: {type:Number},
-  }],
-  activities: [{
-    activity: { type: mongoose.Schema.Types.ObjectId, ref: 'Activity' },
-    role: {type:String},  // Role or involvement in the activity
-    occupancy: {type:Number},  // Hours or percentage involved in the activity
-  }],
-  performance: {
-    overallRating: Number,
-    projectRatings: [{ project: mongoose.Schema.Types.ObjectId, rating: Number }],
-    activityRatings: [{ activity: mongoose.Schema.Types.ObjectId, rating: Number }],
-  },
-  remarks: [{
-    remark: String,
-    givenBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },  // Manager/HR who gave the remark
-    date: { type: Date, default: Date.now }
-  }],
+    projects: [
+      {
+        project: { type: mongoose.Schema.Types.ObjectId, ref: "Project" },
+        role: { type: String },
+        occupancy: { type: Number },
+      },
+    ],
+    activities: [
+      {
+        activity: { type: mongoose.Schema.Types.ObjectId, ref: "Activity" },
+        role: { type: String }, // Role or involvement in the activity
+        occupancy: { type: Number }, // Hours or percentage involved in the activity
+      },
+    ],
+    performance: {
+      type: Number,
+    },
+    techSkills:{
+      type: [String],
+    },
+    remarks: [
+      {
+        remark: String,
+        givenBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" }, // Manager/HR who gave the remark
+        date: { type: Date, default: Date.now },
+      },
+    ],
   },
 
   { timestamps: true }
@@ -151,10 +156,13 @@ userSchema.methods.matchPassword = async function (password, passwordInDB) {
 
 userSchema.methods.isPasswordChanged = async function (JWTTimestamp) {
   if (this.passwordChangedAt) {
-    const passwordChangedTimeStamp=parseInt( this.passwordChangedAt.getTime()/1000,10)
-     console.log(passwordChangedTimeStamp, JWTTimestamp);
+    const passwordChangedTimeStamp = parseInt(
+      this.passwordChangedAt.getTime() / 1000,
+      10
+    );
+    console.log(passwordChangedTimeStamp, JWTTimestamp);
 
-     return JWTTimestamp < passwordChangedTimeStamp;
+    return JWTTimestamp < passwordChangedTimeStamp;
   }
   return false;
 };

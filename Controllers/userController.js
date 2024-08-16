@@ -168,6 +168,86 @@ const updateUserById = asyncErrorHandler(async (req, res, next) => {
   }
 });
 
+// Controller function to update performance from CSV
+const updatePerformanceFromCSV = async (req, res) => {
+  const filePath = req.file.path; // Assuming you're using multer to handle file uploads
+
+  try {
+    const results = [];
+
+    // Read the CSV file
+    fs.createReadStream(filePath)
+      .pipe(csvParser())
+      .on('data', (data) => results.push(data))
+      .on('end', async () => {
+        // Iterate over the parsed data and update user performance
+        for (const row of results) {
+          const { 'Employee ID': employeeId, Performance } = row;
+
+          // Check if the performance value is valid
+          if (Performance && !isNaN(Performance)) {
+            await User.findOneAndUpdate(
+              { employeeId },
+              { performance: parseFloat(Performance) },
+              { new: true }
+            );
+          } else {
+            console.log(`Skipping update for employee ID ${employeeId} due to invalid performance value.`);
+          }
+        }
+        res.status(200).json({ status: 'success', message: 'Performance updated successfully!' });
+      });
+  } catch (err) {
+    res.status(500).json({ status: 'error', message: err.message });
+  }
+};
+
+const importTechSkillsFromCSV = (req, res) => {
+  const filePath = req.file.path;
+  const results = [];
+  
+  fs.createReadStream(filePath)
+    .pipe(csvParser())
+    .on('data', (row) => {
+      // Process each row and add to results array
+      results.push(row);
+    })
+    .on('end', async () => {
+      try {
+        for (const row of results) {
+          const employeeId = row['Employee ID'];
+          const techSkills = [];
+
+          // Iterate over each column in the row, skipping the first two columns (Employee ID and Employee Full Name)
+          Object.keys(row).slice(2).forEach((skill) => {
+            if (row[skill].toLowerCase() === 'yes') {
+              techSkills.push(skill);
+            }
+          });
+
+          // Find the user by employeeId and update their techSkills
+          await User.findOneAndUpdate(
+            { employeeId },
+            { techSkills }, // Set techSkills array
+            { new: true, useFindAndModify: false }
+          );
+        }
+
+        res.status(200).json({
+          status: 'success',
+          message: 'Tech skills imported successfully!',
+        });
+      } catch (err) {
+        res.status(500).json({
+          status: 'error',
+          message: 'An error occurred while importing tech skills.',
+          error: err.message,
+        });
+      }
+    });
+};
+
+
 // Delete users
 
 // Delete User By Id
@@ -211,6 +291,8 @@ const deleteMultipleUsersByIds = asyncErrorHandler(async (req, res, next) => {
   }
 });
 
+
+
 const deleteAll = asyncErrorHandler(async (req, res, next) => {
   console.log("If request reached or not", req);
   try {
@@ -232,6 +314,8 @@ module.exports = {
   getUserFromDesignation,
   getUserFromRole,
   updateUserById,
+  updatePerformanceFromCSV,
+  importTechSkillsFromCSV,
   deleteUserById,
   deleteMultipleUsersByIds,
   deleteAll,
