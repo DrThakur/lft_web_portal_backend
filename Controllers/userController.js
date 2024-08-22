@@ -89,6 +89,11 @@ const getAllUsers = asyncErrorHandler(async (req, res, next) => {
         path: "projects.project", // Populate the project field in the projects array
         model: "project", // Reference the Project model
         select: "-__v", // Select fields to include/exclude (optional, e.g., exclude the __v field)
+        populate: {
+          path: "projectManager", // Populate the projectManager field in the project
+          model: "user", // Reference the User model
+          select: "employeeId designation fullName", // Select specific fields from the User schema
+        },
       })
       .exec();
 

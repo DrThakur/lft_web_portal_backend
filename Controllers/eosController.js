@@ -81,7 +81,12 @@ const getAllEos = async (req, res) => {
       .populate({
         path: "projects.project",
         model: "project",
-        select: "projectName", // Specify the fields to include
+        select: "projectName projectManager", // Specify the fields to include
+        populate: {
+          path: "projectManager", // Populate the projectManager field in the project
+          model: "user", // Reference the User model
+          select: "employeeId designation fullName", // Select specific fields from the User schema
+        },
       })
       .populate({
         path: "activities.activity",
