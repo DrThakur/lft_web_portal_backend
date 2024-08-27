@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const validator = require("validator");
 const bcrypt = require("bcryptjs");
+const crypto = require("crypto");
 
 //Schema
 const userSchema = new mongoose.Schema(
@@ -27,12 +28,6 @@ const userSchema = new mongoose.Schema(
     },
     salt: {
       type: String,
-    },
-    password: {
-      type: String,
-      required: [true, "Please enter a password"],
-      minlength: 8,
-      select: false,
     },
     confirmPassword: {
       type: String,
@@ -103,7 +98,7 @@ const userSchema = new mongoose.Schema(
       enum: ["admin", "technician", "user"],
       default: "user",
     },
-    passwordChangedAt: Date,
+    passwordChangedAt: { type: Date },
     passwordResetToken: { type: String },
     passwordResetTokenExpires: { type: Date },
     projects: [
@@ -123,7 +118,7 @@ const userSchema = new mongoose.Schema(
     performance: {
       type: Number,
     },
-    techSkills:{
+    techSkills: {
       type: [String],
     },
     remarks: [
@@ -166,27 +161,32 @@ userSchema.methods.isPasswordChanged = async function (JWTTimestamp) {
   }
   return false;
 };
-// const generateRandomCode = (length) => {
-//   const chars =
-//     "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-//   let code = "";
-//   for (let i = 0; i < length; i++) {
-//     code += chars.charAt(Math.floor(Math.random() * chars.length));
-//   }
-//   return code;
-// };
 
-// userSchema.methods.createResetPasswordToken = function () {
-//   const resetToken = generateRandomCode(16);
+const generateVerificationCode = (length) => {
+  const characters =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let code = "";
+  for (let i = 0; i < length; i++) {
+    const randomIndex = crypto.randomInt(0, characters.length);
+    code += characters[randomIndex];
+  }
+  return code;
+};
 
-//   this.passwordResetToken = createHash("sha256")
-//     .update(resetToken)
-//     .digest("hex");
-//   this.passwordResetTokenExpires = Date.now() + 10 * 60 * 1000;
+userSchema.methods.createResetPasswordToken = function () {
+  const resetToken = generateVerificationCode(6);
 
-//   console.log(resetToken, this.passwordResetToken);
-//   return resetToken;
-// };
+  this.passwordResetToken = crypto
+    .createHash("sha256")
+    .update(resetToken)
+    .digest("hex");
+
+  this.passwordResetTokenExpires = Date.now() + 10 * 60 * 1000;
+
+  console.log(resetToken, this.passwordResetToken);
+  console.log("my reset token", resetToken);
+  return resetToken;
+};
 
 // Model
 const User = mongoose.model("user", userSchema);

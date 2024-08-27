@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const upload = require("../Utils/upload");
 const User = require("../Models/userModel");
+const {protect}= require("../Controllers/authController")
 
 
 const {
@@ -38,7 +39,7 @@ const {
 // router.delete("/deleteAll", deleteAll);
 
 // Define routes with explicit HTTP methods for clarity
-router.get("/", getUsers)
+router.get("/",  getUsers)
 router.get("/all", getAllUsers);
 router.post("/", createNewUser);
 

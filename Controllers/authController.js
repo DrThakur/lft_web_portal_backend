@@ -1,7 +1,10 @@
 const User = require("./../Models/userModel");
 const asyncErrorHandler = require("../Utils/asyncErrorHandler");
-const CustomeError = require("../Utils/CustomError");
+const CustomError = require("../Utils/CustomError");
 const authentication = require("../Utils/authentication");
+const sendEmail = require("../Utils/email");
+const bcrypt = require("bcryptjs");
+const crypto = require("crypto");
 
 // exports.signup = asyncErrorHandler(async (req, res, next) => {
 //   const newUser = await User.create(req.body);
@@ -58,10 +61,10 @@ const protect = asyncErrorHandler(async (req, res, next) => {
   //1. Read the token & check if it exits
   const testToken = req.headers.authorization;
   let token;
-  if (testToken && testToken.startsWith("bearer")) {
+  if (testToken && testToken.startsWith("Bearer")) {
     token = testToken.split(" ")[1];
   }
-  // console.log("Test token", token)
+  console.log("Test token", token)
   if (!token) {
     next(new CustomError("You are not authorized to access thi route", 401));
   }
@@ -94,7 +97,99 @@ const protect = asyncErrorHandler(async (req, res, next) => {
 }
 });
 
+
+const forgotPassword = asyncErrorHandler(async (req, res, next)=> {
+  //1. Get User based on Posted email
+  const user =await User.findOne({email: req.body.email});
+
+  if(!user){
+    const error = new CustomError("We could not find the user with given email", 404);
+    next(error)
+  }
+
+  //2. Generate a Random Reset Code
+  const resetToken = user.createResetPasswordToken();
+  await user.save();
+  
+  //3. Send The Code back to the user email
+
+  const message = `We have received a password reset request. Please use the below One Time Password(OTP) to reset your password.\n\n ${resetToken}\n\n This OTP is valid only for 10 minutes.`
+  
+  try {
+    await sendEmail({
+      email:user.email,
+      subject:'Reset Password Request',
+      message:message
+    });
+
+    res.status(200).json({
+      status:'success',
+      message:'password reset code sent to the user email'
+    })
+  } catch (error) {
+    user.passwordResetToken = undefined;
+    user.passwordResetTokenExpires=undefined;
+    user.save();
+
+    return next(new CustomError('There was an error sending password reset email. Please try again later', 500))
+  }
+  
+  
+ 
+
+})
+
+const resetPassword =asyncErrorHandler(async (req, res, next)=> {
+  const { email, resetCode, newPassword, confirmPassword } = req.body;
+
+  // 1. Find the user by email
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    const error = new CustomError("User not found", 404);
+    return next(error);
+  }
+
+  // 2. Check if the reset code is valid and not expired
+  const hashedCode = crypto
+    .createHash('sha256')
+    .update(resetCode)
+    .digest('hex');
+
+
+    console.log("my hashed code", hashedCode);
+
+  if (
+    hashedCode !== user.passwordResetToken ||
+    user.passwordResetTokenExpires < Date.now()
+  ) {
+    const error = new CustomError("Invalid or expired reset code", 400);
+    return next(error);
+  }
+
+  // 3. Check if passwords match
+  if (newPassword !== confirmPassword) {
+    const error = new CustomError("Passwords do not match", 400);
+    return next(error);
+  }
+
+  // 4. Hash and set the new password
+  user.password = await bcrypt.hash(newPassword, 12);
+  user.passwordResetToken = undefined; // Clear the reset token
+  user.passwordResetTokenExpires = undefined; // Clear the token expiration
+  user.passwordChangedAt=Date.now();
+  await user.save();
+
+  res.status(200).json({
+    status: 'success',
+    message: 'Password has been reset!',
+  });
+
+})
+
 module.exports = {
   login,
   protect,
+  forgotPassword,
+  resetPassword
 };
